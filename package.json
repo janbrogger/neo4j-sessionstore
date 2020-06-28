@@ -1,0 +1,59 @@
+{
+  "name": "neo4j-sessionstore",
+  "version": "0.0.1",
+  "description": "Implementation of a session storage using Neo4j as an extension of the express-session middleware.",
+  "main": "index.js",
+  "readmeFilename": "README.md",
+  "scripts": {
+    "build": "rm -rf dist && NODE_ENV=production babel lib/ -d dist/",
+    "flow": "flow",
+    "test": "jest --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/janbrogger/neo4j-sessionstore.git"
+  },
+  "author": "@JanBrogger jan@brogger.no",
+  "license": "",
+  "bugs": {
+    "url": "https://github.com/janbrogger/neo4j-sessionstore/issues"
+  },
+  "homepage": "https://github.com/janbrogger/neo4j-sessionstore#readme",
+  "engines": {
+    "node": "14.4.0"
+  },
+  "dependencies": {
+    "express-session": "^1.17.1",
+    "neo4j-driver": "^4.1.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.10.3",
+    "@babel/core": "^7.10.3",
+    "@babel/preset-env": "^7.10.3",
+    "@babel/preset-flow": "^7.10.1",
+    "babel-eslint": "^10.1.0",
+    "babel-jest": "^26.1.0",
+    "coveralls": "^3.1.0",
+    "eslint": "^7.3.1",
+    "flow-bin": "^0.128.0",
+    "jest": "^26.1.0"
+  },
+  "files": [
+    "dist/",
+    "index.js"
+  ],
+  "jest": {
+    "testEnvironment": "node",
+    "rootDir": "test",
+    "transform": {
+      "\\.js$": "babel-jest"
+    }
+  },
+  "keywords": [
+    "neo4j",
+    "session",
+    "session-store",
+    "express-session",
+    "express"
+  ]
+}

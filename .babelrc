@@ -1,0 +1,15 @@
+{
+    "comments": false,
+    "minified": true,
+    "presets": [
+      ["@babel/preset-env",
+        {
+          "targets": {
+            "node": "14.4.0"
+          }
+        }
+      ],
+      ["@babel/preset-flow"]
+    ],
+    "plugins": []
+  }
