@@ -2,6 +2,8 @@ import uuidv4 from 'uuid/v4';
 import Neo4jSessionStore from '../lib/Neo4jSessionStore';
 import { toSecondsEpoch } from '../lib/util';
 import { DEFAULT_TABLE_NAME, DEFAULT_TTL } from '../lib/constants';
+import {execSync} from 'child_process';
+
 
 const TEST_OPTIONS = {
   table: {
@@ -22,7 +24,39 @@ const TEST_OPTIONS = {
 
 beforeAll(async () => {
   // TODO: setup test environment by creating a test table
-  return Promise.resolve(null);
+
+  var neo4jTestContainerExists = false;
+  const output1 = execSync("docker ps -a --filter 'name=testneo4j' | wc -l").toString().trimRight();
+  if (output1 === "2")
+  {
+    console.log("Found test neo4j container");
+    neo4jTestContainerExists = true;
+  }
+      
+  var neo4jTestContainerRuns = false;
+  const output2 = execSync("docker ps --filter 'name=testneo4j' | wc -l").toString().trimRight();
+  if (output2 === "2")
+  {
+    console.log("Found running test neo4j container");
+    neo4jTestContainerRuns = true;
+  }
+
+  console.log(`Test container exists: ${neo4jTestContainerExists}`);
+  console.log(`Test container runs: ${neo4jTestContainerRuns}`);
+
+  if (neo4jTestContainerExists & !neo4jTestContainerRuns)
+  {
+    execSync("docker start testneo4j"); 
+  }
+  else if (!neo4jTestContainerExists)
+  {
+    const neo4jDockerCommand = "docker run "
+      +"--name testneo4j "
+      +"-p7474:7474 -p7687:7687 "
+      +"-d  neo4j:latest";
+
+    execSync(neo4jDockerCommand);
+  }
 });
 
 afterAll(async () => {
