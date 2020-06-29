@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rm -rf dist && NODE_ENV=production babel lib/ -d dist/",
     "flow": "flow",
-    "test": "jest --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+    "test": "rm -rf dist && NODE_ENV=production babel lib/ -d dist/ && jest --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },
   "repository": {
     "type": "git",
@@ -23,8 +23,7 @@
     "node": "14.4.0"
   },
   "dependencies": {
-    "express-session": "^1.17.1",
-    "neo4j-driver": "^4.1.0"
+    "express-session": "^1.17.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.3",
@@ -36,7 +35,8 @@
     "coveralls": "^3.1.0",
     "eslint": "^7.3.1",
     "flow-bin": "^0.128.0",
-    "jest": "^26.1.0"
+    "jest": "^26.1.0",
+    "neo4j-driver": "^4.1.0"
   },
   "files": [
     "dist/",

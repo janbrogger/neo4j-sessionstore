@@ -8,6 +8,9 @@ import {
   DEFAULT_TTL,
   DEFAULT_TOUCH_INTERVAL,
   DEFAULT_KEEP_EXPIRED_POLICY,
+  DEFAULT_NEO4J_URL,
+  DEFAULT_NEO4J_USER,
+  DEFAULT_NEO4J_PWD
 } from '../lib/constants';
 
 describe('constants', () => {
@@ -22,6 +25,9 @@ describe('constants', () => {
     expect(DEFAULT_RCU).toBeDefined();
     expect(DEFAULT_TABLE_NAME).toBeDefined();
     expect(DEFAULT_KEEP_EXPIRED_POLICY).toBeDefined();
+    expect(DEFAULT_NEO4J_URL).toBeDefined();
+    expect(DEFAULT_NEO4J_USER).toBeDefined();
+    expect(DEFAULT_NEO4J_PWD).toBeDefined();
   });
 
   it('default callback raises the appropriate error', () =>

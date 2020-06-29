@@ -12,11 +12,9 @@ const TEST_OPTIONS = {
     hashPrefix: 'test:',
   },
   neo4jConfig: {
-    endpoint: 'ENDPOINT',
-    maxRetries: 0,
-    httpOptions: {
-      connectTimeout: 1000,
-    },
+    neo4jurl: 'bolt://localhost:7687',
+    neo4juser : 'neo4j',
+    neo4jpwd : 'test'
   },
   touchInterval: 0,
 };
@@ -26,7 +24,8 @@ beforeAll(async () => {
   // TODO: setup test environment by creating a test table
 
   var neo4jTestContainerExists = false;
-  const output1 = execSync("docker ps -a --filter 'name=testneo4j' | wc -l").toString().trimRight();
+  const output1 = execSync("docker ps -a --filter 'name=testneo4j' | wc -l")
+    .toString().trimRight();
   if (output1 === "2")
   {
     console.log("Found test neo4j container");
@@ -34,7 +33,8 @@ beforeAll(async () => {
   }
       
   var neo4jTestContainerRuns = false;
-  const output2 = execSync("docker ps --filter 'name=testneo4j' | wc -l").toString().trimRight();
+  const output2 = execSync("docker ps --filter 'name=testneo4j' | wc -l")
+    .toString().trimRight();
   if (output2 === "2")
   {
     console.log("Found running test neo4j container");
@@ -53,10 +53,12 @@ beforeAll(async () => {
     const neo4jDockerCommand = "docker run "
       +"--name testneo4j "
       +"-p7474:7474 -p7687:7687 "
+      +"--env NEO4J_AUTH=neo4j/test "
       +"-d  neo4j:latest";
 
     execSync(neo4jDockerCommand);
   }
+
 });
 
 afterAll(async () => {
