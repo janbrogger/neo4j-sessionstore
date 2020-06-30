@@ -3,7 +3,7 @@ import Neo4jSessionStore from '../lib/Neo4jSessionStore';
 import { toSecondsEpoch } from '../lib/util';
 import { DEFAULT_TABLE_NAME, DEFAULT_TTL } from '../lib/constants';
 import {execSync} from 'child_process';
-
+const neo4j = require('neo4j-driver');
 
 const TEST_OPTIONS = {
   table: {
@@ -28,7 +28,7 @@ beforeAll(async () => {
     .toString().trimRight();
   if (output1 === "2")
   {
-    console.log("Found test neo4j container");
+    //console.log("Found test neo4j container");
     neo4jTestContainerExists = true;
   }
       
@@ -37,19 +37,21 @@ beforeAll(async () => {
     .toString().trimRight();
   if (output2 === "2")
   {
-    console.log("Found running test neo4j container");
+    //console.log("Found running test neo4j container");
     neo4jTestContainerRuns = true;
   }
 
-  console.log(`Test container exists: ${neo4jTestContainerExists}`);
-  console.log(`Test container runs: ${neo4jTestContainerRuns}`);
+  //console.log(`Test container exists: ${neo4jTestContainerExists}`);
+  //console.log(`Test container runs: ${neo4jTestContainerRuns}`);
 
   if (neo4jTestContainerExists & !neo4jTestContainerRuns)
   {
+    //console.log('Starting stopped test neo4j container');
     execSync("docker start testneo4j"); 
   }
   else if (!neo4jTestContainerExists)
   {
+    //console.log('Starting a new test neo4j container');
     const neo4jDockerCommand = "docker run "
       +"--name testneo4j "
       +"-p7474:7474 -p7687:7687 "
@@ -67,6 +69,32 @@ afterAll(async () => {
 });
 
 describe('Neo4jSessionStore', () => {
+  it('Database connectivity test', () => 
+    new Promise((resolve, reject) => {
+      
+      const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
+      const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
+      const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
+      try {
+        const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
+        const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
+        const neo4jsession = neo4jdriver.session();
+        const queryString = "MATCH (n) RETURN count(n) as nodecount;";
+        neo4jsession.run(queryString)
+        .then((result) => {
+          result.records.map((record) => {
+            var nodecount = record.get("nodecount");
+            expect(nodecount.high).toBe(0);
+            neo4jsession.close();
+            resolve();          
+          });
+        })
+      } catch (error) {
+          reject(error);
+        }
+    })
+  );
+
   it('should create a store and a new table', () =>
     new Promise((resolve, reject) => {
       const options = {
@@ -87,9 +115,11 @@ describe('Neo4jSessionStore', () => {
           // TODO: delete the table
         }
       });
+      
       expect(store).toBeDefined();
     }));
-
+});
+/*
   it('should create a store using an existing table', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
@@ -602,3 +632,4 @@ describe('Neo4jSessionStore', () => {
       );
     }));
 });
+*/
