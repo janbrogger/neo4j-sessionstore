@@ -99,13 +99,31 @@ describe("Neo4jSessionStore", () => {
           hashKey: "test-sessionId",
           hashPrefix: "test:",
         },
-        neo4jconfig: TEST_OPTIONS.neo4jConfig,
+        neo4jConfig: TEST_OPTIONS.neo4jConfig,
       };
+      const neo4jurl = options.neo4jConfig.neo4jurl;
+      const neo4juser = options.neo4jConfig.neo4juser;
+      const neo4jpwd = options.neo4jConfig.neo4jpwd;
+
       const store = new Neo4jSessionStore(options, (err) => {
+        let neo4jsession;
+        let neo4jdriver;
         try {
           expect(err).toBeUndefined();
+
+          const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
+          neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
+          neo4jsession = neo4jdriver.session();
+          console.log(options.table.name);        
+          //const queryString = "MATCH (n) RETURN count(n) as nodecount;";
+          neo4jsession.close();
+          neo4jdriver.close();
           resolve();
         } catch (error) {
+          if (neo4jsession)
+            neo4jsession.close();
+          if (neo4jdriver)
+            neo4jdriver.close();
           reject(error);
         } finally {
           // TODO: delete the table
