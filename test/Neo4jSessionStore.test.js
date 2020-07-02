@@ -1,42 +1,41 @@
-import uuidv4 from 'uuid/v4';
-import Neo4jSessionStore from '../lib/Neo4jSessionStore';
-import { toSecondsEpoch } from '../lib/util';
-import { DEFAULT_TABLE_NAME, DEFAULT_TTL } from '../lib/constants';
-import {execSync} from 'child_process';
-const neo4j = require('neo4j-driver');
+import uuidv4 from "uuid/v4";
+import Neo4jSessionStore from "../lib/Neo4jSessionStore";
+import { toSecondsEpoch } from "../lib/util";
+import { DEFAULT_TABLE_NAME, DEFAULT_TTL } from "../lib/constants";
+import { execSync } from "child_process";
+const neo4j = require("neo4j-driver");
 
 const TEST_OPTIONS = {
   table: {
-    name: 'test-sessions',
-    hashKey: 'test-sessionId',
-    hashPrefix: 'test:',
+    name: "test-sessions",
+    hashKey: "test-sessionId",
+    hashPrefix: "test:",
   },
   neo4jConfig: {
-    neo4jurl: 'bolt://localhost:7687',
-    neo4juser : 'neo4j',
-    neo4jpwd : 'test'
+    neo4jurl: "bolt://localhost:7687",
+    neo4juser: "neo4j",
+    neo4jpwd: "test",
   },
   touchInterval: 0,
 };
-
 
 beforeAll(async () => {
   // TODO: setup test environment by creating a test table
 
   var neo4jTestContainerExists = false;
   const output1 = execSync("docker ps -a --filter 'name=testneo4j' | wc -l")
-    .toString().trimRight();
-  if (output1 === "2")
-  {
+    .toString()
+    .trimRight();
+  if (output1 === "2") {
     //console.log("Found test neo4j container");
     neo4jTestContainerExists = true;
   }
-      
+
   var neo4jTestContainerRuns = false;
   const output2 = execSync("docker ps --filter 'name=testneo4j' | wc -l")
-    .toString().trimRight();
-  if (output2 === "2")
-  {
+    .toString()
+    .trimRight();
+  if (output2 === "2") {
     //console.log("Found running test neo4j container");
     neo4jTestContainerRuns = true;
   }
@@ -44,23 +43,20 @@ beforeAll(async () => {
   //console.log(`Test container exists: ${neo4jTestContainerExists}`);
   //console.log(`Test container runs: ${neo4jTestContainerRuns}`);
 
-  if (neo4jTestContainerExists & !neo4jTestContainerRuns)
-  {
+  if (neo4jTestContainerExists & !neo4jTestContainerRuns) {
     //console.log('Starting stopped test neo4j container');
-    execSync("docker start testneo4j"); 
-  }
-  else if (!neo4jTestContainerExists)
-  {
+    execSync("docker start testneo4j");
+  } else if (!neo4jTestContainerExists) {
     //console.log('Starting a new test neo4j container');
-    const neo4jDockerCommand = "docker run "
-      +"--name testneo4j "
-      +"-p7474:7474 -p7687:7687 "
-      +"--env NEO4J_AUTH=neo4j/test "
-      +"-d  neo4j:latest";
+    const neo4jDockerCommand =
+      "docker run " +
+      "--name testneo4j " +
+      "-p7474:7474 -p7687:7687 " +
+      "--env NEO4J_AUTH=neo4j/test " +
+      "-d  neo4j:latest";
 
     execSync(neo4jDockerCommand);
   }
-
 });
 
 afterAll(async () => {
@@ -68,10 +64,9 @@ afterAll(async () => {
   return Promise.resolve(null);
 });
 
-describe('Neo4jSessionStore', () => {
-  it('Database connectivity test', () => 
+describe("Neo4jSessionStore", () => {
+  it("Database connectivity test", () =>
     new Promise((resolve, reject) => {
-      
       const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
       const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
       const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
@@ -80,28 +75,29 @@ describe('Neo4jSessionStore', () => {
         const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
         const neo4jsession = neo4jdriver.session();
         const queryString = "MATCH (n) RETURN count(n) as nodecount;";
-        neo4jsession.run(queryString)
-        .then((result) => {
+        neo4jsession.run(queryString).then((result) => {
           result.records.map((record) => {
             var nodecount = record.get("nodecount");
-            expect(nodecount.high).toBe(0);
             neo4jsession.close();
-            resolve();          
+            neo4jdriver.close();
+            expect(nodecount.high).toBe(0);
+            resolve();
           });
-        })
+        });
       } catch (error) {
-          reject(error);
-        }
-    })
-  );
+        neo4jsession.close();
+        neo4jdriver.close();
+        reject(error);
+      }
+    }));
 
-  it('should create a store and a new table', () =>
+  it("should create a store and a new table", () =>
     new Promise((resolve, reject) => {
       const options = {
         table: {
-          name: 'test-sessions-new',
-          hashKey: 'test-sessionId',
-          hashPrefix: 'test:',
+          name: "test-sessions-new",
+          hashKey: "test-sessionId",
+          hashPrefix: "test:",
         },
         neo4jconfig: TEST_OPTIONS.neo4jConfig,
       };
@@ -115,7 +111,7 @@ describe('Neo4jSessionStore', () => {
           // TODO: delete the table
         }
       });
-      
+
       expect(store).toBeDefined();
     }));
 });
