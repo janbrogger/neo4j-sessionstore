@@ -77,10 +77,10 @@ describe("Neo4jSessionStore", () => {
         const queryString = "MATCH (n) RETURN count(n) as nodecount;";
         neo4jsession.run(queryString).then((result) => {
           result.records.map((record) => {
-            var nodecount = record.get("nodecount");
+            var nodecount = record.get("nodecount").toNumber();
             neo4jsession.close();
             neo4jdriver.close();
-            expect(nodecount.high).toBe(0);
+            expect(nodecount).toBe(0);
             resolve();
           });
         });
@@ -95,8 +95,8 @@ describe("Neo4jSessionStore", () => {
     new Promise((resolve, reject) => {
       const options = {
         table: {
-          name: "test-sessions-new",
-          hashKey: "test-sessionId",
+          name: "testsessionsnew",
+          hashKey: "testsessionId",
           hashPrefix: "test:",
         },
         neo4jConfig: TEST_OPTIONS.neo4jConfig,
@@ -108,29 +108,35 @@ describe("Neo4jSessionStore", () => {
       const store = new Neo4jSessionStore(options, (err) => {
         let neo4jsession;
         let neo4jdriver;
-        try {
-          expect(err).toBeUndefined();
 
+        expect(err).toBeUndefined();
+        try {
           const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
           neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
           neo4jsession = neo4jdriver.session();
-          console.log(options.table.name);        
-          //const queryString = "MATCH (n) RETURN count(n) as nodecount;";
-          neo4jsession.close();
-          neo4jdriver.close();
-          resolve();
+
+          const queryString = "MATCH (n) RETURN count(n) as nodecount;";
+          return neo4jsession
+            .run(queryString)
+            .then((result) => {
+              var nodecount;
+              result.records.map((record) => {
+                nodecount = record.get("nodecount").toNumber();
+              });
+              neo4jsession.close();
+              neo4jdriver.close();
+              expect(nodecount).toBe(1);
+            })
+            .then(() => {
+              expect(store).toBeDefined();
+              resolve();
+            });
         } catch (error) {
-          if (neo4jsession)
-            neo4jsession.close();
-          if (neo4jdriver)
-            neo4jdriver.close();
+          if (neo4jsession) neo4jsession.close();
+          if (neo4jdriver) neo4jdriver.close();
           reject(error);
-        } finally {
-          // TODO: delete the table
         }
       });
-
-      expect(store).toBeDefined();
     }));
 });
 /*
