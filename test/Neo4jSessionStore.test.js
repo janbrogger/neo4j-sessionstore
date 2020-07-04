@@ -19,9 +19,10 @@ const TEST_OPTIONS = {
   touchInterval: 0,
 };
 
-/* beforeAll(async () => {
-  // TODO: setup test environment by creating a test table
-
+/**
+ * Setups a test environment on Docker.
+ */
+beforeAll(async () => {
   var neo4jTestContainerExists = false;
   const output1 = execSync("docker ps -a --filter 'name=testneo4j' | wc -l")
     .toString()
@@ -65,10 +66,16 @@ const TEST_OPTIONS = {
   const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
   const neo4jsession = neo4jdriver.session();
   const queryString = "MATCH (n) DELETE (n);";
-  return neo4jsession.run(queryString);
-}); */
+  await neo4jsession.run(queryString).then((result) => {
+    neo4jsession.close();
+    neo4jdriver.close();
+  });
+});
 
- afterAll( async  () => {
+/**
+ * Resets the database by deleting ALL entries.
+ */
+afterAll(async () => {
   const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
   const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
   const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
@@ -76,13 +83,11 @@ const TEST_OPTIONS = {
   const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
   const neo4jsession = neo4jdriver.session();
   const queryString = "MATCH (n) DELETE (n);";
-  await neo4jsession.
-    run(queryString)
-    .then((result) => {
-      neo4jsession.close()
-      neo4jdriver.close();
-    });
-}); 
+  await neo4jsession.run(queryString).then((result) => {
+    neo4jsession.close();
+    neo4jdriver.close();
+  });
+});
 
 describe("Neo4jSessionStore", () => {
   it("Database connectivity test", () =>
@@ -109,10 +114,9 @@ describe("Neo4jSessionStore", () => {
         neo4jdriver.close();
         reject(error);
       }
-    })
-  );
+    }));
 
-  /* it("should create a store and a new table", () =>
+  it("should create a store and a new table", () =>
     new Promise((resolve, reject) => {
       const options = {
         table: {
@@ -131,6 +135,7 @@ describe("Neo4jSessionStore", () => {
         let neo4jdriver;
 
         expect(err).toBeUndefined();
+        store.close();
         try {
           const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
           neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
@@ -153,10 +158,12 @@ describe("Neo4jSessionStore", () => {
               resolve();
             });
         } catch (error) {
+          if (neo4jsession) neo4jsession.close();
+          if (neo4jdriver) neo4jdriver.close();
           reject(error);
         }
       });
-    })); */
+    }));
 });
 /*
   it('should create a store using an existing table', () =>
