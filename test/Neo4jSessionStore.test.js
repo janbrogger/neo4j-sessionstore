@@ -123,8 +123,8 @@ describe("Neo4jSessionStore", () => {
               result.records.map((record) => {
                 nodecount = record.get("nodecount").toNumber();
               });
-              neo4jsession.close();
-              neo4jdriver.close();
+              if (neo4jsession) neo4jsession.close();
+              if (neo4jdriver) neo4jdriver.close();
               expect(nodecount).toBe(1);
             })
             .then(() => {
@@ -132,8 +132,6 @@ describe("Neo4jSessionStore", () => {
               resolve();
             });
         } catch (error) {
-          if (neo4jsession) neo4jsession.close();
-          if (neo4jdriver) neo4jdriver.close();
           reject(error);
         }
       });
