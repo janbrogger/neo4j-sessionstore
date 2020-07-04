@@ -19,7 +19,7 @@ const TEST_OPTIONS = {
   touchInterval: 0,
 };
 
-beforeAll(async () => {
+/* beforeAll(async () => {
   // TODO: setup test environment by creating a test table
 
   var neo4jTestContainerExists = false;
@@ -66,9 +66,9 @@ beforeAll(async () => {
   const neo4jsession = neo4jdriver.session();
   const queryString = "MATCH (n) DELETE (n);";
   return neo4jsession.run(queryString);
-});
+}); */
 
-afterAll(async () => {
+/* afterAll(async () => {
   const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
   const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
   const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
@@ -77,7 +77,7 @@ afterAll(async () => {
   const neo4jsession = neo4jdriver.session();
   const queryString = "MATCH (n) DELETE (n);";
   return neo4jsession.run(queryString);
-});
+}); */
 
 describe("Neo4jSessionStore", () => {
   it("Database connectivity test", () =>
@@ -104,9 +104,10 @@ describe("Neo4jSessionStore", () => {
         neo4jdriver.close();
         reject(error);
       }
-    }));
+    })
+  );
 
-  it("should create a store and a new table", () =>
+  /* it("should create a store and a new table", () =>
     new Promise((resolve, reject) => {
       const options = {
         table: {
@@ -150,7 +151,7 @@ describe("Neo4jSessionStore", () => {
           reject(error);
         }
       });
-    }));
+    })); */
 });
 /*
   it('should create a store using an existing table', () =>
