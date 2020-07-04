@@ -57,11 +57,26 @@ beforeAll(async () => {
 
     execSync(neo4jDockerCommand);
   }
+
+  const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
+  const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
+  const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
+  const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
+  const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
+  const neo4jsession = neo4jdriver.session();
+  const queryString = "MATCH (n) DELETE (n);";
+  return neo4jsession.run(queryString);
 });
 
 afterAll(async () => {
-  // TODO: clean test environment by deleting the test table
-  return Promise.resolve(null);
+  const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
+  const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
+  const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
+  const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
+  const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
+  const neo4jsession = neo4jdriver.session();
+  const queryString = "MATCH (n) DELETE (n);";
+  return neo4jsession.run(queryString);
 });
 
 describe("Neo4jSessionStore", () => {
