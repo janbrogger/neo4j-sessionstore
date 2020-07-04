@@ -68,7 +68,7 @@ const TEST_OPTIONS = {
   return neo4jsession.run(queryString);
 }); */
 
-/* afterAll(async () => {
+ afterAll( async  () => {
   const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
   const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
   const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
@@ -76,8 +76,13 @@ const TEST_OPTIONS = {
   const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
   const neo4jsession = neo4jdriver.session();
   const queryString = "MATCH (n) DELETE (n);";
-  return neo4jsession.run(queryString);
-}); */
+  await neo4jsession.
+    run(queryString)
+    .then((result) => {
+      neo4jsession.close()
+      neo4jdriver.close();
+    });
+}); 
 
 describe("Neo4jSessionStore", () => {
   it("Database connectivity test", () =>
