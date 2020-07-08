@@ -19,6 +19,48 @@ const TEST_OPTIONS = {
   touchInterval: 0,
 };
 
+function getNeo4jsession() {
+  const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
+  const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
+  const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
+  const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
+  const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
+  const neo4jsession = neo4jdriver.session();
+  return {
+    neo4jdriver: neo4jdriver,
+    neo4jsession: neo4jsession,
+  };
+}
+
+function closeNeo4j(neo4jdriver, neo4jsession) {
+  if (neo4jsession) neo4jsession.close();
+  if (neo4jdriver) neo4jdriver.close();
+}
+
+async function deleteEverythingInDatabase() {
+  const { neo4jdriver, neo4jsession } = getNeo4jsession();
+  const queryString = "MATCH (n) DELETE (n);";
+  await neo4jsession.run(queryString).then((result) => {
+    closeNeo4j(neo4jdriver, neo4jsession);
+  });
+}
+
+async function getNodeCount() {
+  const { neo4jdriver, neo4jsession } = getNeo4jsession();
+  const queryString = "MATCH (n) RETURN count(n) as nodecount;";
+
+  const nodeCount = await neo4jsession.run(queryString).then((result) => {
+    return Math.max.apply(
+      Math,
+      result.records.map((record) => {
+        return record.get("nodecount").toNumber();
+      })
+    );
+  });
+  closeNeo4j(neo4jdriver, neo4jsession);
+  return nodeCount;
+}
+
 /**
  * Setups a test environment on Docker.
  */
@@ -59,61 +101,35 @@ beforeAll(async () => {
     execSync(neo4jDockerCommand);
   }
 
-  const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
-  const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
-  const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
-  const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
-  const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
-  const neo4jsession = neo4jdriver.session();
-  const queryString = "MATCH (n) DELETE (n);";
-  await neo4jsession.run(queryString).then((result) => {
-    neo4jsession.close();
-    neo4jdriver.close();
-  });
+  await deleteEverythingInDatabase();
+});
+
+beforeEach(async () => {
+  await deleteEverythingInDatabase();
+});
+
+afterEach(async () => {
+  await deleteEverythingInDatabase();
 });
 
 /**
  * Resets the database by deleting ALL entries.
  */
 afterAll(async () => {
-  const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
-  const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
-  const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
-  const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
-  const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
-  const neo4jsession = neo4jdriver.session();
-  const queryString = "MATCH (n) DELETE (n);";
-  await neo4jsession.run(queryString).then((result) => {
-    neo4jsession.close();
-    neo4jdriver.close();
-  });
+  await deleteEverythingInDatabase();
 });
 
 describe("Neo4jSessionStore", () => {
   it("Database connectivity test", () =>
     new Promise((resolve, reject) => {
-      const neo4jurl = TEST_OPTIONS.neo4jConfig.neo4jurl;
-      const neo4juser = TEST_OPTIONS.neo4jConfig.neo4juser;
-      const neo4jpwd = TEST_OPTIONS.neo4jConfig.neo4jpwd;
-      try {
-        const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
-        const neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
-        const neo4jsession = neo4jdriver.session();
-        const queryString = "MATCH (n) RETURN count(n) as nodecount;";
-        neo4jsession.run(queryString).then((result) => {
-          result.records.map((record) => {
-            var nodecount = record.get("nodecount").toNumber();
-            neo4jsession.close();
-            neo4jdriver.close();
-            expect(nodecount).toBe(0);
-            resolve();
-          });
+      getNodeCount()
+        .then((result) => {
+          expect(result).toBe(0);
+          resolve();
+        })
+        .catch((error) => {
+          reject(error);
         });
-      } catch (error) {
-        neo4jsession.close();
-        neo4jdriver.close();
-        reject(error);
-      }
     }));
 
   it("should create a store and a new table", () =>
@@ -126,61 +142,67 @@ describe("Neo4jSessionStore", () => {
         },
         neo4jConfig: TEST_OPTIONS.neo4jConfig,
       };
-      const neo4jurl = options.neo4jConfig.neo4jurl;
-      const neo4juser = options.neo4jConfig.neo4juser;
-      const neo4jpwd = options.neo4jConfig.neo4jpwd;
 
-      const store = new Neo4jSessionStore(options, (err) => {
-        let neo4jsession;
-        let neo4jdriver;
-
-        expect(err).toBeUndefined();
-        store.close();
-        try {
-          const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
-          neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
-          neo4jsession = neo4jdriver.session();
-
-          const queryString = "MATCH (n) RETURN count(n) as nodecount;";
-          return neo4jsession
-            .run(queryString)
-            .then((result) => {
-              var nodecount;
-              result.records.map((record) => {
-                nodecount = record.get("nodecount").toNumber();
-              });
-              if (neo4jsession) neo4jsession.close();
-              if (neo4jdriver) neo4jdriver.close();
-              expect(nodecount).toBe(1);
-            })
-            .then(() => {
-              expect(store).toBeDefined();
-              resolve();
-            });
-        } catch (error) {
-          if (neo4jsession) neo4jsession.close();
-          if (neo4jdriver) neo4jdriver.close();
-          reject(error);
-        }
+      getNodeCount().then((result) => {
+        expect(result).toBe(0);
+        const store = new Neo4jSessionStore(options, (err) => {
+          expect(err).toBeUndefined();
+          store.close();
+          getNodeCount().then((result) => {
+            expect(result).toBe(1);
+            resolve();
+          });
+        });
+      })
+      .catch( (error) => {
+        reject(error);
       });
-    }));
+    })
+  );
 });
+
 /*
   it('should create a store using an existing table', () =>
     new Promise((resolve, reject) => {
-      const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
-        if (err) reject(err);
-        else resolve();
+      expect(getNodeCount()).toBe(0);
+      // Create existing table for test
+      const neo4jsession = getNeo4jsession();
+      const queryString = `CREATE (n:${TEST_OPTIONS.table.name});`;
+      neo4jsession.
+        run(queryString).
+        then((result) => {
+          expect(getNodeCount()).toBe(0);
+          // Start store, using this table
+          const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
+            if (err) reject(err);
+            else {
+              expect(getNodeCount()).toBe(1);
+              expect(store).toBeDefined();
+              resolve();
+            }
+          });
+        }).
+        then((result) => {
+          neo4jsession.close();
+          neo4jdriver.close();
       });
-      expect(store).toBeDefined();
     }));
 
   it('should create a store with default table values', () =>
     new Promise((resolve, reject) => {
       const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
+      const neo4jurl = options.neo4jConfig.neo4jurl;
+      const neo4juser = options.neo4jConfig.neo4juser;
+      const neo4jpwd = options.neo4jConfig.neo4jpwd;
+      const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
+      neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
+      neo4jsession = neo4jdriver.session();
+
       const store = new Neo4jSessionStore(options, (err) => {
         try {
           expect(err).toBeUndefined();
+         
+
           resolve();
         } catch (error) {
           reject(error);
