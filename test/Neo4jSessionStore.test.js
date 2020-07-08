@@ -7,8 +7,8 @@ const neo4j = require("neo4j-driver");
 
 const TEST_OPTIONS = {
   table: {
-    name: "test-sessions",
-    hashKey: "test-sessionId",
+    name: "testSessions",
+    hashKey: "testSessionId",
     hashPrefix: "test:",
   },
   neo4jConfig: {
@@ -109,17 +109,18 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await deleteEverythingInDatabase();
+  //await deleteEverythingInDatabase();
 });
 
 /**
  * Resets the database by deleting ALL entries.
  */
 afterAll(async () => {
-  await deleteEverythingInDatabase();
+  //await deleteEverythingInDatabase();
 });
 
-describe("Neo4jSessionStore", () => {
+describe("Neo4jSessionStore",  () => {
+  
   it("Database connectivity test", () =>
     new Promise((resolve, reject) => {
       getNodeCount()
@@ -143,51 +144,59 @@ describe("Neo4jSessionStore", () => {
         neo4jConfig: TEST_OPTIONS.neo4jConfig,
       };
 
-      getNodeCount().then((result) => {
-        expect(result).toBe(0);
-        const store = new Neo4jSessionStore(options, (err) => {
-          expect(err).toBeUndefined();
-          store.close();
-          getNodeCount().then((result) => {
-            expect(result).toBe(1);
-            resolve();
+      getNodeCount()
+        .then((result) => {
+          expect(result).toBe(0);
+          const store = new Neo4jSessionStore(options, (err) => {
+            expect(err).toBeUndefined();
+            store.close();
+            getNodeCount().then((result) => {
+              expect(result).toBe(1);
+              resolve();
+            });
           });
+        })
+        .catch((error) => {
+          closeNeo4j(neo4jdriver, neo4jsession);
+          reject(error);
         });
-      })
-      .catch( (error) => {
-        reject(error);
+    }));
+
+  it("should create a store using an existing table",  () =>
+    new Promise( (resolve, reject) => {
+      // Create existing table for test
+      var nodeCount1 = getNodeCount().then((nodeCount1) => {
+        expect(nodeCount1).toBe(0);
+        const { neo4jdriver, neo4jsession } = getNeo4jsession();
+        const queryString = `CREATE (n:${TEST_OPTIONS.table.name});`;
+        neo4jsession.run(queryString)
+          .then((result) => {
+            closeNeo4j(neo4jdriver, neo4jsession);
+            getNodeCount().then((nodeCount2) => {
+              expect(nodeCount2).toBe(1);
+
+              const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
+                if (err) reject(err);
+                else {
+                  getNodeCount().then((nodeCount3) => {
+                    expect(nodeCount3).toBe(1);
+                    expect(store).toBeDefined();
+                    resolve();
+                  });
+                }
+              })
+            });
+          })
+          .catch((error) => {
+            closeNeo4j(neo4jdriver, neo4jsession);
+            reject(error);
+          });;
       });
+      
     })
   );
 });
-
 /*
-  it('should create a store using an existing table', () =>
-    new Promise((resolve, reject) => {
-      expect(getNodeCount()).toBe(0);
-      // Create existing table for test
-      const neo4jsession = getNeo4jsession();
-      const queryString = `CREATE (n:${TEST_OPTIONS.table.name});`;
-      neo4jsession.
-        run(queryString).
-        then((result) => {
-          expect(getNodeCount()).toBe(0);
-          // Start store, using this table
-          const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
-            if (err) reject(err);
-            else {
-              expect(getNodeCount()).toBe(1);
-              expect(store).toBeDefined();
-              resolve();
-            }
-          });
-        }).
-        then((result) => {
-          neo4jsession.close();
-          neo4jdriver.close();
-      });
-    }));
-
   it('should create a store with default table values', () =>
     new Promise((resolve, reject) => {
       const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
