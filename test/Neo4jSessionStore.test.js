@@ -109,92 +109,65 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  //await deleteEverythingInDatabase();
+  await deleteEverythingInDatabase();
 });
 
 /**
  * Resets the database by deleting ALL entries.
  */
 afterAll(async () => {
-  //await deleteEverythingInDatabase();
+  await deleteEverythingInDatabase();
 });
 
-describe("Neo4jSessionStore",  () => {
-  
-  it("Database connectivity test", () =>
-    new Promise((resolve, reject) => {
-      getNodeCount()
-        .then((result) => {
-          expect(result).toBe(0);
-          resolve();
-        })
-        .catch((error) => {
-          reject(error);
-        });
-    }));
+describe("Neo4jSessionStore", () => {
+  it("Database connectivity test", async () => {
+    const nodeCount = await getNodeCount();
+    expect(nodeCount).toBe(0);
+  });
 
-  it("should create a store and a new table", () =>
-    new Promise((resolve, reject) => {
-      const options = {
-        table: {
-          name: "testsessionsnew",
-          hashKey: "testsessionId",
-          hashPrefix: "test:",
-        },
-        neo4jConfig: TEST_OPTIONS.neo4jConfig,
-      };
+  it("should create a store and a new table", async () => {
+    await deleteEverythingInDatabase();
+    const options = {
+      table: {
+        name: "testsessionsnew",
+        hashKey: "testsessionId",
+        hashPrefix: "test:",
+      },
+      neo4jConfig: TEST_OPTIONS.neo4jConfig,
+    };
 
-      getNodeCount()
-        .then((result) => {
-          expect(result).toBe(0);
-          const store = new Neo4jSessionStore(options, (err) => {
-            expect(err).toBeUndefined();
-            store.close();
-            getNodeCount().then((result) => {
-              expect(result).toBe(1);
-              resolve();
-            });
-          });
-        })
-        .catch((error) => {
-          closeNeo4j(neo4jdriver, neo4jsession);
-          reject(error);
-        });
-    }));
+    const nodeCount = await getNodeCount();
+    expect(nodeCount).toBe(0);
+    const store = await new Neo4jSessionStore(options, (err) => {
+      expect(err).toBeUndefined();
+      store.close(); 
+      getNodeCount().then((result) => {
+        expect(result).toBe(1);
+      })
+    });
+  });
 
-  it("should create a store using an existing table",  () =>
-    new Promise( (resolve, reject) => {
+  it("should create a store using an existing table", async () =>
+    {
+      await deleteEverythingInDatabase();
+      // Start with empty database
+      const nodeCount = await getNodeCount();
+      expect(nodeCount).toBe(0);
+
       // Create existing table for test
-      var nodeCount1 = getNodeCount().then((nodeCount1) => {
-        expect(nodeCount1).toBe(0);
-        const { neo4jdriver, neo4jsession } = getNeo4jsession();
-        const queryString = `CREATE (n:${TEST_OPTIONS.table.name});`;
-        neo4jsession.run(queryString)
-          .then((result) => {
-            closeNeo4j(neo4jdriver, neo4jsession);
-            getNodeCount().then((nodeCount2) => {
-              expect(nodeCount2).toBe(1);
+      const { neo4jdriver, neo4jsession } = getNeo4jsession();
+      const queryString = `CREATE (n:${TEST_OPTIONS.table.name});`;
+      await neo4jsession.run(queryString);
+      closeNeo4j(neo4jdriver, neo4jsession);
+      const nodeCount2 = await getNodeCount();
+      expect(nodeCount2).toBe(1);
 
-              const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
-                if (err) reject(err);
-                else {
-                  getNodeCount().then((nodeCount3) => {
-                    expect(nodeCount3).toBe(1);
-                    expect(store).toBeDefined();
-                    resolve();
-                  });
-                }
-              })
-            });
-          })
-          .catch((error) => {
-            closeNeo4j(neo4jdriver, neo4jsession);
-            reject(error);
-          });;
-      });
-      
-    })
-  );
+      const store = await new Neo4jSessionStore(TEST_OPTIONS);
+      expect(store).toBeDefined();
+      const nodeCount3 = await getNodeCount();
+      expect(nodeCount3).toBe(1);
+      store.close();
+    });
 });
 /*
   it('should create a store with default table values', () =>
