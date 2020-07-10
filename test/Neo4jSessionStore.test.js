@@ -125,7 +125,8 @@ describe("Neo4jSessionStore", () => {
     expect(nodeCount).toBe(0);
   });
 
-  it("should create a store and a new table", async () => {
+
+   it("should create a store and a new table", async () => {
     await deleteEverythingInDatabase();
     const options = {
       table: {
@@ -145,8 +146,9 @@ describe("Neo4jSessionStore", () => {
         expect(result).toBe(1);
       })
     });
-  });
+  }); 
 
+  
   it("should create a store using an existing table", async () =>
     {
       await deleteEverythingInDatabase();
@@ -168,7 +170,10 @@ describe("Neo4jSessionStore", () => {
       expect(nodeCount3).toBe(1);
       store.close();
     });
+  
 });
+
+
 /*
   it('should create a store with default table values', () =>
     new Promise((resolve, reject) => {

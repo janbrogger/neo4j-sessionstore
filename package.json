@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rm -rf dist && NODE_ENV=production babel lib/ -d dist/",
     "flow": "flow",
-    "test": "rm -rf dist && NODE_ENV=production babel lib/ -d dist/ && jest --silent=false --verbose "
+    "test": "rm -rf dist && NODE_ENV=production babel lib/ -d dist/ && jest --runInBand --silent=false --verbose "
   },
   "repository": {
     "type": "git",
