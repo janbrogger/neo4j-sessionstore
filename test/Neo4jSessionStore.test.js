@@ -120,38 +120,43 @@ afterAll(async () => {
 });
 
 describe("Neo4jSessionStore", () => {
-  it("Database connectivity test", async () => {
-    const nodeCount = await getNodeCount();
-    expect(nodeCount).toBe(0);
+  it("Database connectivity test", done => {
+      expect.assertions(1);
+      getNodeCount().
+      then((result) => {
+        expect(result).toBe(0);
+        done();
+      });      
   });
 
+   it("should create a store and a new table", done => {
+    new Promise(async (resolve, reject) => { 
+      expect.assertions(4);
+      const options = {
+        table: {
+          name: "testsessionsnew",
+          hashKey: "testsessionId",
+          hashPrefix: "test:",
+        },
+        neo4jConfig: TEST_OPTIONS.neo4jConfig,
+      };
 
-   it("should create a store and a new table", async () => {
-    await deleteEverythingInDatabase();
-    const options = {
-      table: {
-        name: "testsessionsnew",
-        hashKey: "testsessionId",
-        hashPrefix: "test:",
-      },
-      neo4jConfig: TEST_OPTIONS.neo4jConfig,
-    };
-
-    const nodeCount = await getNodeCount();
-    expect(nodeCount).toBe(0);
-    const store = await new Neo4jSessionStore(options, (err) => {
+      const nodeCount = await getNodeCount();
+      expect(nodeCount).toBe(0);
+      const store = await new Neo4jSessionStore(options, async (err) => {
+        expect(err).toBeUndefined();
+        store.close(); 
+        const nodeCount2 = await getNodeCount();
+        expect(nodeCount2).toBe(1);
+        resolve();
+      });
+    }).then(err => {
       expect(err).toBeUndefined();
-      store.close(); 
-      getNodeCount().then((result) => {
-        expect(result).toBe(1);
-      })
-    });
+      done()});
   }); 
 
-  
   it("should create a store using an existing table", async () =>
     {
-      await deleteEverythingInDatabase();
       // Start with empty database
       const nodeCount = await getNodeCount();
       expect(nodeCount).toBe(0);
@@ -164,7 +169,7 @@ describe("Neo4jSessionStore", () => {
       const nodeCount2 = await getNodeCount();
       expect(nodeCount2).toBe(1);
 
-      const store = await new Neo4jSessionStore(TEST_OPTIONS);
+      const store =  new Neo4jSessionStore(TEST_OPTIONS);
       expect(store).toBeDefined();
       const nodeCount3 = await getNodeCount();
       expect(nodeCount3).toBe(1);
