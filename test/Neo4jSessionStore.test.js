@@ -120,7 +120,7 @@ afterAll(async () => {
 });
 
 describe("Neo4jSessionStore", () => {
-  it("Database connectivity test", done => {
+  it("X1 Database connectivity test", done => {
       expect.assertions(1);
       getNodeCount().
       then((result) => {
@@ -129,9 +129,9 @@ describe("Neo4jSessionStore", () => {
       });      
   });
 
-   it("should create a store and a new table", done => {
-    new Promise(async (resolve, reject) => { 
-      expect.assertions(4);
+   it("X2 should create a store and a new table", () => {
+    return new Promise(async (resolve, reject) => { 
+      expect.assertions(3);
       const options = {
         table: {
           name: "testsessionsnew",
@@ -150,12 +150,10 @@ describe("Neo4jSessionStore", () => {
         expect(nodeCount2).toBe(1);
         resolve();
       });
-    }).then(err => {
-      expect(err).toBeUndefined();
-      done()});
+    });
   }); 
 
-  it("should create a store using an existing table", async () =>
+  it("X3 should create a store using an existing table", async () =>
     {
       // Start with empty database
       const nodeCount = await getNodeCount();
@@ -175,36 +173,45 @@ describe("Neo4jSessionStore", () => {
       expect(nodeCount3).toBe(1);
       store.close();
     });
-  
-});
 
-
-/*
-  it('should create a store with default table values', () =>
+  it('X4 should create a store with default table values', () =>
     new Promise((resolve, reject) => {
+      expect.assertions(2);
       const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
-      const neo4jurl = options.neo4jConfig.neo4jurl;
-      const neo4juser = options.neo4jConfig.neo4juser;
-      const neo4jpwd = options.neo4jConfig.neo4jpwd;
-      const neo4jauth = neo4j.auth.basic(neo4juser, neo4jpwd);
-      neo4jdriver = neo4j.driver(neo4jurl, neo4jauth);
-      neo4jsession = neo4jdriver.session();
-
+      
       const store = new Neo4jSessionStore(options, (err) => {
         try {
+          expect(store).toBeDefined();
           expect(err).toBeUndefined();
-         
-
+          store.close();
           resolve();
         } catch (error) {
           reject(error);
-        } finally {
-          // TODO: delete the table
         }
       });
-      expect(store).toBeDefined();
     }));
+    
+    it('X5 should set a session ID ', () => {
+      return new Promise((resolve, reject) => {
+        expect.assertions(1);
+        const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
+        
+        const store = new Neo4jSessionStore(options);
+        const sessionId = uuidv4();
+        const name = uuidv4();
+        store.set(sessionId, { name },  async (err) => {
+          if (err) reject(err);
+          const nodeCount = await getNodeCount();
+          expect(nodeCount).toBe(2);
+          store.close();
+          resolve();
+          // TODO: check for properties of session row
+        });
+      });
+    });
 
+});
+/*
   it('should create session with default ttl', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(
@@ -655,9 +662,7 @@ describe("Neo4jSessionStore", () => {
         }
       });
     }));
-
-  it('should handle errors touching sessions', () =>
-    new Promise((resolve, reject) => {
+Promises fixedesolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
       });
@@ -675,7 +680,7 @@ describe("Neo4jSessionStore", () => {
     new Promise((resolve, reject) => {
       // eslint-disable-next-line
       new Neo4jSessionStore(
-        {
+        {Promises fixed
           ...TEST_OPTIONS,
           table: {
             name: 1,
