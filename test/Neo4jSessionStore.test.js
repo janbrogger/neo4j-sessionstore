@@ -61,6 +61,7 @@ async function getNodeCount() {
   return nodeCount;
 }
 
+
 /**
  * Setups a test environment on Docker.
  */
@@ -191,25 +192,38 @@ describe("Neo4jSessionStore", () => {
       });
     }));
     
-    it('X5 should set a session ID ', () => {
+  it('X5 should set a session ID ', () => {
       return new Promise((resolve, reject) => {
-        expect.assertions(1);
+        expect.assertions(3);
         const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
         
         const store = new Neo4jSessionStore(options);
         const sessionId = uuidv4();
         const name = uuidv4();
+        const sessionIdWithPrefix = store.getSessionId(sessionId);
         store.set(sessionId, { name },  async (err) => {
           if (err) reject(err);
           const nodeCount = await getNodeCount();
           expect(nodeCount).toBe(2);
           store.close();
-          resolve();
-          // TODO: check for properties of session row
-        });
+          
+          const { neo4jdriver, neo4jsession } = getNeo4jsession();
+            const queryString = `MATCH (n:sessions) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+    
+            neo4jsession.run(queryString)
+            .then((result) => {
+              const sessionIds = result.records.map(r => r.get("n").properties.sessionId);
+              expect(sessionIds.length).toEqual(1);
+              expect(sessionIds[0]).toEqual(sessionIdWithPrefix);
+              closeNeo4j(neo4jdriver, neo4jsession);
+              resolve();
+            }).catch(err => {
+              closeNeo4j(neo4jdriver, neo4jsession);
+              reject(err);
+            });
+        });  
       });
     });
-
 });
 /*
   it('should create session with default ttl', () =>
