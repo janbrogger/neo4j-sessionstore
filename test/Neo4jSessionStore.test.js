@@ -61,7 +61,6 @@ async function getNodeCount() {
   return nodeCount;
 }
 
-
 /**
  * Setups a test environment on Docker.
  */
@@ -121,17 +120,16 @@ afterAll(async () => {
 });
 
 describe("Neo4jSessionStore", () => {
-  it("X1 Database connectivity test", done => {
-      expect.assertions(1);
-      getNodeCount().
-      then((result) => {
-        expect(result).toBe(0);
-        done();
-      });      
+  it("X1 Database connectivity test", (done) => {
+    expect.assertions(1);
+    getNodeCount().then((result) => {
+      expect(result).toBe(0);
+      done();
+    });
   });
 
-   it("X2 should create a store and a new table", () => {
-    return new Promise(async (resolve, reject) => { 
+  it("X2 should create a store and a new table", () => {
+    return new Promise(async (resolve, reject) => {
       expect.assertions(3);
       const options = {
         table: {
@@ -146,40 +144,39 @@ describe("Neo4jSessionStore", () => {
       expect(nodeCount).toBe(0);
       const store = await new Neo4jSessionStore(options, async (err) => {
         expect(err).toBeUndefined();
-        store.close(); 
+        store.close();
         const nodeCount2 = await getNodeCount();
         expect(nodeCount2).toBe(1);
         resolve();
       });
     });
-  }); 
+  });
 
-  it("X3 should create a store using an existing table", async () =>
-    {
-      // Start with empty database
-      const nodeCount = await getNodeCount();
-      expect(nodeCount).toBe(0);
+  it("X3 should create a store using an existing table", async () => {
+    // Start with empty database
+    const nodeCount = await getNodeCount();
+    expect(nodeCount).toBe(0);
 
-      // Create existing table for test
-      const { neo4jdriver, neo4jsession } = getNeo4jsession();
-      const queryString = `CREATE (n:${TEST_OPTIONS.table.name});`;
-      await neo4jsession.run(queryString);
-      closeNeo4j(neo4jdriver, neo4jsession);
-      const nodeCount2 = await getNodeCount();
-      expect(nodeCount2).toBe(1);
+    // Create existing table for test
+    const { neo4jdriver, neo4jsession } = getNeo4jsession();
+    const queryString = `CREATE (n:${TEST_OPTIONS.table.name});`;
+    await neo4jsession.run(queryString);
+    closeNeo4j(neo4jdriver, neo4jsession);
+    const nodeCount2 = await getNodeCount();
+    expect(nodeCount2).toBe(1);
 
-      const store =  new Neo4jSessionStore(TEST_OPTIONS);
-      expect(store).toBeDefined();
-      const nodeCount3 = await getNodeCount();
-      expect(nodeCount3).toBe(1);
-      store.close();
-    });
+    const store = new Neo4jSessionStore(TEST_OPTIONS);
+    expect(store).toBeDefined();
+    const nodeCount3 = await getNodeCount();
+    expect(nodeCount3).toBe(1);
+    store.close();
+  });
 
-  it('X4 should create a store with default table values', () =>
+  it("X4 should create a store with default table values", () =>
     new Promise((resolve, reject) => {
       expect.assertions(2);
       const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
-      
+
       const store = new Neo4jSessionStore(options, (err) => {
         try {
           expect(store).toBeDefined();
@@ -191,121 +188,124 @@ describe("Neo4jSessionStore", () => {
         }
       });
     }));
-    
-  it('X5 should set a session', () => {
-      return new Promise((resolve, reject) => {
-        expect.assertions(5);
-        const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
-        
-        const store = new Neo4jSessionStore(options);
-        const sessionId = uuidv4();
-        const name = uuidv4();
-        const sessionIdWithPrefix = store.getSessionId(sessionId);
-        store.set(sessionId, { name },  async (err) => {
-          if (err) reject(err);
-          const nodeCount = await getNodeCount();
-          expect(nodeCount).toBe(2);
+
+  it("X5 should set a session", () => {
+    return new Promise((resolve, reject) => {
+      expect.assertions(5);
+      const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
+
+      const store = new Neo4jSessionStore(options);
+      const sessionId = uuidv4();
+      const name = uuidv4();
+      const sessionIdWithPrefix = store.getSessionId(sessionId);
+      store.set(sessionId, { name }, async (err) => {
+        if (err) reject(err);
+        const nodeCount = await getNodeCount();
+        expect(nodeCount).toBe(2);
+        store.close();
+
+        const { neo4jdriver, neo4jsession } = getNeo4jsession();
+        const queryString = `MATCH (n:sessions) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+
+        neo4jsession
+          .run(queryString)
+          .then((result) => {
+            const records = result.records.map((r) => r.get("n"));
+            expect(records.length).toEqual(1);
+            var record = records[0];
+            // throw new Error(record);
+            expect(record.properties['sessionId']).toEqual(sessionIdWithPrefix);
+            expect(record.properties['expires']).toBeDefined();
+            expect(record.properties['sess']).toBeDefined();
+            closeNeo4j(neo4jdriver, neo4jsession);
+            resolve();
+          })
+          .catch((err) => {
+            closeNeo4j(neo4jdriver, neo4jsession);
+            reject(err);
+          });
+      });
+    });
+  });
+
+  it("X6 should get a session", async () => {
+    return new Promise((resolve, reject) => {
+      expect.assertions(4);
+      const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
+
+      const store = new Neo4jSessionStore(options);
+      const sessionId = uuidv4();
+      const name = uuidv4();
+      const sessionIdWithPrefix = store.getSessionId(sessionId);
+      store.set(sessionId, { name }, (err) => {
+        if (err) reject(err);
+        store.get(sessionId, (err, sess) => {
           store.close();
-          
+          expect(err).toBeNull();
+          expect(sess).toBeDefined();
+          expect(sess.name).toBeDefined();
+          expect(sess.updated).toBeDefined();
+          resolve();
+        });
+      });
+    });
+  });
+
+  it("X7 should create session with default ttl", async () => {
+    return new Promise((resolve, reject) => {
+      expect.assertions(9);
+      const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
+
+      const store = new Neo4jSessionStore(options);
+      const sessionId = uuidv4();
+      const name = uuidv4();
+      const sessionIdWithPrefix = store.getSessionId(sessionId);
+      store.set(sessionId, { name }, (err) => {
+        if (err) reject(err);
+        store.get(sessionId, (err, sess) => {
+          store.close();
           const { neo4jdriver, neo4jsession } = getNeo4jsession();
-            const queryString = `MATCH (n:sessions) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
-    
-            neo4jsession.run(queryString)
+          const queryString = `MATCH (n:sessions) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+
+          neo4jsession
+            .run(queryString)
             .then((result) => {
-              const records = result.records.map(r => r.get("n"));
+              const records = result.records.map((r) => r.get("n"));
               expect(records.length).toEqual(1);
               var record = records[0];
-              // throw new Error(record);
-              expect(record.properties.sessionId).toEqual(sessionIdWithPrefix);
-              expect(record.properties.expires).toBeDefined();
-              expect(record.properties.sess).toBeDefined();
+
+              expect(record.properties['sessionId']).toEqual(sessionIdWithPrefix);
+              expect(record.properties['expires']).toBeDefined();
+              expect(record.properties['sess']).toBeDefined();
+
+              // future date
+              expect(record.properties['expires'])
+                .toBeGreaterThan(toSecondsEpoch(new Date()));
+              // should be before the default ttl limit
+              expect(record.properties['expires']).toBeLessThanOrEqual(
+                toSecondsEpoch(new Date(Date.now() + DEFAULT_TTL)));
+              // after 10 seconds before the limit (assuming test execution time < 5 seconds)
+              expect(record.properties['expires']).toBeGreaterThan(
+                // eslint-disable-next-line
+                toSecondsEpoch(new Date(Date.now() + DEFAULT_TTL - 10000))
+              );
+              expect(record.properties['sess']).toBeDefined();
+              expect(JSON.parse(record.properties['sess']).name).toBe(name);
+
               closeNeo4j(neo4jdriver, neo4jsession);
               resolve();
-            }).catch(err => {
+            })
+            .catch((err) => {
               closeNeo4j(neo4jdriver, neo4jsession);
               reject(err);
             });
-        });  
+        });
       });
     });
+  });
 
-    it('X6 should get a session', async () => {
-      return new Promise((resolve, reject) => {
-        expect.assertions(4);
-        const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
-        
-        const store = new Neo4jSessionStore(options);
-        const sessionId = uuidv4();
-        const name = uuidv4();
-        const sessionIdWithPrefix = store.getSessionId(sessionId);
-        store.set(sessionId, { name }, (err) => {
-          if (err) reject(err);
-          store.get(sessionId, (err, sess) => {
-            store.close();
-            expect(err).toBeNull();
-            expect(sess).toBeDefined();
-            expect(sess.name).toBeDefined();
-            expect(sess.updated).toBeDefined();
-            resolve();
-          });
-        });  
-      });
-    });
 });
 /*
-  it('should create session with default ttl', () =>
-    new Promise((resolve, reject) => {
-      const store = new Neo4jSessionStore(
-        {
-          ...TEST_OPTIONS,
-          ttl: undefined,
-        },
-        (err) => {
-          if (err) reject(err);
-        },
-      );
-      const sessionId = uuidv4();
-      const name = uuidv4();
-      store.set(sessionId, { name }, async (err) => {
-        try {
-          if (err) reject(err);
-          else {
-            const params = {
-              TableName: TEST_OPTIONS.table.name,
-              Key: {
-                [TEST_OPTIONS.table.hashKey]: `${TEST_OPTIONS.table.hashPrefix}${sessionId}`,
-              },
-            };
-            const sessionRow = await documentClient.get(params).promise();
-            expect(sessionRow).toBeDefined();
-            expect(sessionRow.Item).toBeDefined();
-            expect(sessionRow.Item.expires).toBeDefined();
-            expect(Number.isInteger(sessionRow.Item.expires)).toBeTruthy();
-            // make sure it's in the seconds epoch
-            expect(String(sessionRow.Item.expires).length).toBe(
-              String(toSecondsEpoch(new Date())).length,
-            );
-            // future date
-            expect(sessionRow.Item.expires).toBeGreaterThan(toSecondsEpoch(new Date()));
-            // should be before the default ttl limit
-            expect(sessionRow.Item.expires).toBeLessThanOrEqual(
-              toSecondsEpoch(new Date(Date.now() + DEFAULT_TTL)),
-            );
-            // after 10 seconds before the limit (assuming test execution time < 5 seconds)
-            expect(sessionRow.Item.expires).toBeGreaterThan(
-              // eslint-disable-next-line
-              toSecondsEpoch(new Date(Date.now() + DEFAULT_TTL - 10000)),
-            );
-            expect(sessionRow.Item.sess).toBeDefined();
-            expect(sessionRow.Item.sess.name).toBe(name);
-            resolve();
-          }
-        } catch (error) {
-          reject(error);
-        }
-      });
-    }));
-
   it('should create session using the cookie maxAge', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
@@ -700,19 +700,6 @@ describe("Neo4jSessionStore", () => {
           } catch (err2) {
             reject(err2);
           }
-        }
-      });
-    }));
-Promises fixedesolve, reject) => {
-      const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
-        if (err) reject(err);
-      });
-      store.touch(null, null, (err) => {
-        try {
-          expect(err).toBeDefined();
-          resolve();
-        } catch (error) {
-          reject(error);
         }
       });
     }));
