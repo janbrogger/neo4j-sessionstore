@@ -110,14 +110,14 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await deleteEverythingInDatabase();
+  // await deleteEverythingInDatabase();
 });
 
 /**
  * Resets the database by deleting ALL entries.
  */
 afterAll(async () => {
-  await deleteEverythingInDatabase();
+  // await deleteEverythingInDatabase();
 });
 
 describe("Neo4jSessionStore", () => {
@@ -192,7 +192,7 @@ describe("Neo4jSessionStore", () => {
       });
     }));
     
-  it('X5 should set a session ID ', () => {
+  it('X5 should set a session', () => {
       return new Promise((resolve, reject) => {
         expect.assertions(5);
         const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
@@ -225,6 +225,29 @@ describe("Neo4jSessionStore", () => {
               closeNeo4j(neo4jdriver, neo4jsession);
               reject(err);
             });
+        });  
+      });
+    });
+
+    it('X6 should get a session', async () => {
+      return new Promise((resolve, reject) => {
+        expect.assertions(4);
+        const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
+        
+        const store = new Neo4jSessionStore(options);
+        const sessionId = uuidv4();
+        const name = uuidv4();
+        const sessionIdWithPrefix = store.getSessionId(sessionId);
+        store.set(sessionId, { name }, (err) => {
+          if (err) reject(err);
+          store.get(sessionId, (err, sess) => {
+            store.close();
+            expect(err).toBeNull();
+            expect(sess).toBeDefined();
+            expect(sess.name).toBeDefined();
+            expect(sess.updated).toBeDefined();
+            resolve();
+          });
         });  
       });
     });

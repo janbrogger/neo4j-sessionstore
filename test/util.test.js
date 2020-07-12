@@ -1,4 +1,5 @@
 import { toSecondsEpoch } from '../lib/util';
+import { fromSecondsEpoch } from '../lib/util';
 
 describe('util', () => {
   it('should calculate the seconds epoch for a date', () => {
@@ -11,5 +12,12 @@ describe('util', () => {
     expect(() => {
       toSecondsEpoch({});
     }).toThrow();
+  });
+
+  it('should calculate a date from the seconds epoch', () => {
+    const dateAsSeconds = 1500336000;
+    const dateAsDate = new Date('2017-07-18T00:00:00.000Z');
+    const asDate = fromSecondsEpoch(dateAsSeconds);
+    expect(asDate.toISOString()).toEqual(dateAsDate.toISOString());
   });
 });
