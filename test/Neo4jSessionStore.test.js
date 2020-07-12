@@ -194,7 +194,7 @@ describe("Neo4jSessionStore", () => {
     
   it('X5 should set a session ID ', () => {
       return new Promise((resolve, reject) => {
-        expect.assertions(3);
+        expect.assertions(5);
         const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
         
         const store = new Neo4jSessionStore(options);
@@ -212,9 +212,13 @@ describe("Neo4jSessionStore", () => {
     
             neo4jsession.run(queryString)
             .then((result) => {
-              const sessionIds = result.records.map(r => r.get("n").properties.sessionId);
-              expect(sessionIds.length).toEqual(1);
-              expect(sessionIds[0]).toEqual(sessionIdWithPrefix);
+              const records = result.records.map(r => r.get("n"));
+              expect(records.length).toEqual(1);
+              var record = records[0];
+              // throw new Error(record);
+              expect(record.properties.sessionId).toEqual(sessionIdWithPrefix);
+              expect(record.properties.expires).toBeDefined();
+              expect(record.properties.sess).toBeDefined();
               closeNeo4j(neo4jdriver, neo4jsession);
               resolve();
             }).catch(err => {
