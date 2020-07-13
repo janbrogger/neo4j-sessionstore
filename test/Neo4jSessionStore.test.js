@@ -205,7 +205,7 @@ describe("Neo4jSessionStore", () => {
         store.close();
 
         const { neo4jdriver, neo4jsession } = getNeo4jsession();
-        const queryString = `MATCH (n:sessions) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+        const queryString = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
 
         neo4jsession
           .run(queryString)
@@ -265,7 +265,7 @@ describe("Neo4jSessionStore", () => {
         store.get(sessionId, (err, sess) => {
           store.close();
           const { neo4jdriver, neo4jsession } = getNeo4jsession();
-          const queryString = `MATCH (n:sessions) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+          const queryString = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
 
           neo4jsession
             .run(queryString)
@@ -331,7 +331,7 @@ describe("Neo4jSessionStore", () => {
           store.get(sessionId, (err, sess) => {
             store.close();
             const { neo4jdriver, neo4jsession } = getNeo4jsession();
-            const queryString = `MATCH (n:sessions) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+            const queryString = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
 
             neo4jsession
               .run(queryString)
@@ -378,6 +378,7 @@ describe("Neo4jSessionStore", () => {
 
   it("X9 should handle errors creating sessions", () =>
     new Promise((resolve, reject) => {
+      expect.assertions(1);
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
       });
@@ -391,32 +392,41 @@ describe("Neo4jSessionStore", () => {
           reject(error);
         }
       });
-    }));
-});
-/*
-  
-  it('should update a session', () =>
+    })
+  );
+
+  it('X10 should update a session', () =>
     new Promise((resolve, reject) => {
+      expect.assertions(3);
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
       });
       const sessionId = 'abcde';
       const name = uuidv4();
+      const sessionIdWithPrefix = store.getSessionId(sessionId);
+      //throw new Error(sessionIdWithPrefix);
       store.set(sessionId, { name: uuidv4() }, async (err) => {
         if (err) reject(err);
-        store.set(sessionId, { name }, async (err2) => {
+        store.set(sessionId, { name: name}, async (err2) => {
           try {
             if (err2) reject(err2);
             else {
-              const params = {
-                TableName: TEST_OPTIONS.table.name,
-                Key: {
-                  [TEST_OPTIONS.table.hashKey]: `${TEST_OPTIONS.table.hashPrefix}${sessionId}`,
-                },
-              };
-              const sessionRow = await documentClient.get(params).promise();
-              expect(sessionRow.Item.sess.name).toBe(name);
-              resolve();
+              const { neo4jdriver, neo4jsession } = getNeo4jsession();
+              const queryString = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+
+              neo4jsession
+              .run(queryString)
+              .then((result) => {
+                const records = result.records.map((r) => r.get("n"));
+                expect(records.length).toEqual(1);
+                var record = records[0];
+
+                expect(record.properties["sess"]).toBeDefined();
+                expect(JSON.parse(record.properties["sess"]).name).toBe(name);
+                store.close();
+                closeNeo4j(neo4jdriver, neo4jsession);
+                resolve();
+              });
             }
           } catch (error) {
             reject(error);
@@ -425,6 +435,10 @@ describe("Neo4jSessionStore", () => {
       });
     }));
 
+
+});
+/*
+  
   it('should get an existing session', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
