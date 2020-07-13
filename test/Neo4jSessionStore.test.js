@@ -109,14 +109,14 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  // await deleteEverythingInDatabase();
+  await deleteEverythingInDatabase();
 });
 
 /**
  * Resets the database by deleting ALL entries.
  */
 afterAll(async () => {
-  // await deleteEverythingInDatabase();
+  await deleteEverythingInDatabase();
 });
 
 describe("Neo4jSessionStore", () => {
@@ -214,9 +214,9 @@ describe("Neo4jSessionStore", () => {
             expect(records.length).toEqual(1);
             var record = records[0];
             // throw new Error(record);
-            expect(record.properties['sessionId']).toEqual(sessionIdWithPrefix);
-            expect(record.properties['expires']).toBeDefined();
-            expect(record.properties['sess']).toBeDefined();
+            expect(record.properties["sessionId"]).toEqual(sessionIdWithPrefix);
+            expect(record.properties["expires"]).toBeDefined();
+            expect(record.properties["sess"]).toBeDefined();
             closeNeo4j(neo4jdriver, neo4jsession);
             resolve();
           })
@@ -274,23 +274,27 @@ describe("Neo4jSessionStore", () => {
               expect(records.length).toEqual(1);
               var record = records[0];
 
-              expect(record.properties['sessionId']).toEqual(sessionIdWithPrefix);
-              expect(record.properties['expires']).toBeDefined();
-              expect(record.properties['sess']).toBeDefined();
+              expect(record.properties["sessionId"]).toEqual(
+                sessionIdWithPrefix
+              );
+              expect(record.properties["expires"]).toBeDefined();
+              expect(record.properties["sess"]).toBeDefined();
 
               // future date
-              expect(record.properties['expires'])
-                .toBeGreaterThan(toSecondsEpoch(new Date()));
+              expect(record.properties["expires"]).toBeGreaterThan(
+                toSecondsEpoch(new Date())
+              );
               // should be before the default ttl limit
-              expect(record.properties['expires']).toBeLessThanOrEqual(
-                toSecondsEpoch(new Date(Date.now() + DEFAULT_TTL)));
+              expect(record.properties["expires"]).toBeLessThanOrEqual(
+                toSecondsEpoch(new Date(Date.now() + DEFAULT_TTL))
+              );
               // after 10 seconds before the limit (assuming test execution time < 5 seconds)
-              expect(record.properties['expires']).toBeGreaterThan(
+              expect(record.properties["expires"]).toBeGreaterThan(
                 // eslint-disable-next-line
                 toSecondsEpoch(new Date(Date.now() + DEFAULT_TTL - 10000))
               );
-              expect(record.properties['sess']).toBeDefined();
-              expect(JSON.parse(record.properties['sess']).name).toBe(name);
+              expect(record.properties["sess"]).toBeDefined();
+              expect(JSON.parse(record.properties["sess"]).name).toBe(name);
 
               closeNeo4j(neo4jdriver, neo4jsession);
               resolve();
@@ -304,65 +308,75 @@ describe("Neo4jSessionStore", () => {
     });
   });
 
-});
-/*
-  it('should create session using the cookie maxAge', () =>
-    new Promise((resolve, reject) => {
-      const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
-        if (err) reject(err);
-      });
+  it("X8 should create session using the cookie maxAge", async () => {
+    return new Promise((resolve, reject) => {
+      expect.assertions(9);
+      const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
+
+      const store = new Neo4jSessionStore(options);
       const sessionId = uuidv4();
+      const name = uuidv4();
       const maxAge = 100000;
+      const sessionIdWithPrefix = store.getSessionId(sessionId);
       store.set(
         sessionId,
         {
+          name,
           cookie: {
             maxAge,
           },
         },
         async (err) => {
-          try {
-            if (err) reject(err);
-            else {
-              const params = {
-                TableName: TEST_OPTIONS.table.name,
-                Key: {
-                  [TEST_OPTIONS.table.hashKey]: `${TEST_OPTIONS.table.hashPrefix}${sessionId}`,
-                },
-              };
-              const sessionRow = await documentClient.get(params).promise();
-              expect(sessionRow).toBeDefined();
-              expect(sessionRow.Item).toBeDefined();
-              expect(sessionRow.Item.expires).toBeDefined();
-              expect(Number.isInteger(sessionRow.Item.expires)).toBeTruthy();
-              // make sure it's in the seconds epoch
-              expect(String(sessionRow.Item.expires).length).toBe(
-                String(toSecondsEpoch(new Date())).length,
-              );
-              // future date
-              expect(sessionRow.Item.expires).toBeGreaterThan(toSecondsEpoch(new Date()));
-              // should be before the default maxAge limit
-              expect(sessionRow.Item.expires).toBeLessThanOrEqual(
-                toSecondsEpoch(new Date(Date.now() + maxAge)),
-              );
-              // after 10 seconds before the limit (assuming test execution time < 5 seconds)
-              expect(sessionRow.Item.expires).toBeGreaterThan(
-                // eslint-disable-next-line
-                toSecondsEpoch(new Date(Date.now() + maxAge - 10000)),
-              );
-              expect(sessionRow.Item.sess).toBeDefined();
-              expect(sessionRow.Item.sess.cookie).toBeDefined();
-              expect(sessionRow.Item.sess.cookie.maxAge).toBe(maxAge);
-              resolve();
-            }
-          } catch (error) {
-            reject(error);
-          }
-        },
-      );
-    }));
+          if (err) reject(err);
+          store.get(sessionId, (err, sess) => {
+            store.close();
+            const { neo4jdriver, neo4jsession } = getNeo4jsession();
+            const queryString = `MATCH (n:sessions) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
 
-  it('should handle errors creating sessions', () =>
+            neo4jsession
+              .run(queryString)
+              .then((result) => {
+                const records = result.records.map((r) => r.get("n"));
+                expect(records.length).toEqual(1);
+                var record = records[0];
+
+                expect(record.properties["sessionId"]).toEqual(
+                  sessionIdWithPrefix
+                );
+                expect(record.properties["expires"]).toBeDefined();
+                expect(record.properties["sess"]).toBeDefined();
+
+                // future date
+                expect(record.properties["expires"]).toBeGreaterThan(
+                  toSecondsEpoch(new Date())
+                );
+                // should be before the default maxAge limit
+                expect(record.properties["expires"]).toBeLessThanOrEqual(
+                  toSecondsEpoch(new Date(Date.now())) + maxAge
+                );
+                // after 10 seconds before the limit (assuming test execution time < 5 seconds)
+                expect(record.properties["expires"]).toBeGreaterThan(
+                  // eslint-disable-next-line
+                  toSecondsEpoch(new Date(Date.now() + maxAge - 10000))
+                );
+
+                expect(record.properties["sess"]).toBeDefined();
+                expect(JSON.parse(record.properties["sess"]).name).toBe(name);
+
+                closeNeo4j(neo4jdriver, neo4jsession);
+                resolve();
+              })
+              .catch((err) => {
+                closeNeo4j(neo4jdriver, neo4jsession);
+                reject(err);
+              });
+          });
+        }
+      );
+    });
+  });
+
+  it("X9 should handle errors creating sessions", () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
@@ -370,6 +384,7 @@ describe("Neo4jSessionStore", () => {
       const sessionId = uuidv4();
       store.set(sessionId, null, async (err) => {
         try {
+          store.close();
           expect(err).toBeDefined();
           resolve();
         } catch (error) {
@@ -377,7 +392,9 @@ describe("Neo4jSessionStore", () => {
         }
       });
     }));
-
+});
+/*
+  
   it('should update a session', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
