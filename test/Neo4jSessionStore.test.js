@@ -192,9 +192,8 @@ describe("Neo4jSessionStore", () => {
   it("X5 should set a session", () => {
     return new Promise((resolve, reject) => {
       expect.assertions(5);
-      const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
 
-      const store = new Neo4jSessionStore(options);
+      const store = new Neo4jSessionStore(TEST_OPTIONS);
       const sessionId = uuidv4();
       const name = uuidv4();
       const sessionIdWithPrefix = store.getSessionId(sessionId);
@@ -206,7 +205,7 @@ describe("Neo4jSessionStore", () => {
 
         const { neo4jdriver, neo4jsession } = getNeo4jsession();
         const queryString = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
-
+        
         neo4jsession
           .run(queryString)
           .then((result) => {
@@ -231,9 +230,8 @@ describe("Neo4jSessionStore", () => {
   it("X6 should get a session", async () => {
     return new Promise((resolve, reject) => {
       expect.assertions(4);
-      const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
 
-      const store = new Neo4jSessionStore(options);
+      const store = new Neo4jSessionStore(TEST_OPTIONS);
       const sessionId = uuidv4();
       const name = uuidv4();
       const sessionIdWithPrefix = store.getSessionId(sessionId);
@@ -254,9 +252,8 @@ describe("Neo4jSessionStore", () => {
   it("X7 should create session with default ttl", async () => {
     return new Promise((resolve, reject) => {
       expect.assertions(9);
-      const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
 
-      const store = new Neo4jSessionStore(options);
+      const store = new Neo4jSessionStore(TEST_OPTIONS);
       const sessionId = uuidv4();
       const name = uuidv4();
       const sessionIdWithPrefix = store.getSessionId(sessionId);
@@ -311,9 +308,8 @@ describe("Neo4jSessionStore", () => {
   it("X8 should create session using the cookie maxAge", async () => {
     return new Promise((resolve, reject) => {
       expect.assertions(9);
-      const options = { neo4jConfig: TEST_OPTIONS.neo4jConfig };
 
-      const store = new Neo4jSessionStore(options);
+      const store = new Neo4jSessionStore(TEST_OPTIONS);
       const sessionId = uuidv4();
       const name = uuidv4();
       const maxAge = 100000;
@@ -404,7 +400,7 @@ describe("Neo4jSessionStore", () => {
       const sessionId = 'abcde';
       const name = uuidv4();
       const sessionIdWithPrefix = store.getSessionId(sessionId);
-      //throw new Error(sessionIdWithPrefix);
+      
       store.set(sessionId, { name: uuidv4() }, async (err) => {
         if (err) reject(err);
         store.set(sessionId, { name: name}, async (err2) => {
