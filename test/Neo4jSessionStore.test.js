@@ -312,7 +312,7 @@ describe("Neo4jSessionStore", () => {
       const store = new Neo4jSessionStore(TEST_OPTIONS);
       const sessionId = uuidv4();
       const name = uuidv4();
-      const maxAge = 100000;
+      const maxAge = 100;
       const sessionIdWithPrefix = store.getSessionId(sessionId);
       store.set(
         sessionId,
@@ -348,12 +348,12 @@ describe("Neo4jSessionStore", () => {
                 );
                 // should be before the default maxAge limit
                 expect(record.properties["expires"]).toBeLessThanOrEqual(
-                  toSecondsEpoch(new Date(Date.now())) + maxAge
+                  toSecondsEpoch(new Date(Date.now())) + DEFAULT_TTL
                 );
                 // after 10 seconds before the limit (assuming test execution time < 5 seconds)
                 expect(record.properties["expires"]).toBeGreaterThan(
                   // eslint-disable-next-line
-                  toSecondsEpoch(new Date(Date.now() + maxAge - 10000))
+                  toSecondsEpoch(new Date(Date.now() + maxAge - 10))
                 );
 
                 expect(record.properties["sess"]).toBeDefined();
@@ -431,44 +431,14 @@ describe("Neo4jSessionStore", () => {
       });
     }));
 
-
-});
-/*
-  
-  it('should get an existing session', () =>
+  it('X11 should handle errors getting sessions', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
       });
-      const sessionId = uuidv4();
-      const name = uuidv4();
-      store.set(sessionId, { name }, async (err) => {
-        if (err) reject(err);
-        else {
-          store.get(sessionId, (err2, sess) => {
-            try {
-              if (err2) reject(err2);
-              else {
-                expect(sess).toBeDefined();
-                expect(sess.name).toBe(name);
-                resolve();
-              }
-            } catch (error) {
-              reject(error);
-            }
-          });
-        }
-      });
-    }));
-
-  it('should handle errors getting sessions', () =>
-    new Promise((resolve, reject) => {
-      const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
-        if (err) reject(err);
-      });
-      store.documentClient = null;
       store.get(null, (err) => {
         try {
+          store.close();
           expect(err).toBeDefined();
           resolve();
         } catch (error) {
@@ -477,13 +447,14 @@ describe("Neo4jSessionStore", () => {
       });
     }));
 
-  it('should receive null for missing sessions', () =>
+  it('X12 should receive null for missing sessions', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
       });
       store.get(uuidv4(), (err, sess) => {
         try {
+          store.close();
           if (err) reject(err);
           else {
             expect(sess).toBe(null);
@@ -494,8 +465,8 @@ describe("Neo4jSessionStore", () => {
         }
       });
     }));
-
-  it('should return null for expired sessions and keep the record', () =>
+    
+  it('X13 should return null for expired sessions and keep the record', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(
         {
@@ -511,27 +482,36 @@ describe("Neo4jSessionStore", () => {
         sessionId,
         {
           cookie: {
-            maxAge: -1,
+            maxAge: -2000,
           },
         },
         async (err) => {
           if (err) reject(err);
           else {
+            const sessionIdWithPrefix = store.getSessionId(sessionId);
             store.get(sessionId, async (err2, sess) => {
               try {
                 if (err2) reject(err2);
                 else {
+                  store.close();
                   expect(sess).toBe(null);
-                  const params = {
-                    TableName: TEST_OPTIONS.table.name,
-                    Key: {
-                      [TEST_OPTIONS.table.hashKey]: `${TEST_OPTIONS.table.hashPrefix}${sessionId}`,
-                    },
-                  };
-                  const sessionRow = await documentClient.get(params).promise();
-                  expect(sessionRow).toBeDefined();
-                  expect(sessionRow.Item).toBeDefined();
-                  resolve();
+                  const { neo4jdriver, neo4jsession } = getNeo4jsession();
+                  const queryString = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+
+                  neo4jsession
+                  .run(queryString)
+                  .then((result) => {
+                    closeNeo4j(neo4jdriver, neo4jsession);
+                    const records = result.records.map((r) => r.get("n"));
+                    expect(records.length).toEqual(1);
+                    var record = records[0];
+                    
+                    expect(record).toBeDefined();
+                    expect(record.properties["sess"]).toBeDefined();
+                    expect(record.properties["expires"]).toBeDefined();
+
+                    resolve();
+                  });
                 }
               } catch (error) {
                 reject(error);
@@ -541,6 +521,8 @@ describe("Neo4jSessionStore", () => {
         },
       );
     }));
+});
+/*
 
   it('should return null for expired sessions and destroy the record', () =>
     new Promise((resolve, reject) => {
