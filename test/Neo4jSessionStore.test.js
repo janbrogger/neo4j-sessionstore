@@ -553,17 +553,15 @@ describe("Neo4jSessionStore", () => {
         }
       });
     }));
-});
-/*
 
-  it('should handle errors destroying sessions', () =>
+    it('X15 should handle errors destroying sessions', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
       });
-      store.documentClient = null;
       store.destroy(null, (err) => {
         try {
+          store.close();
           expect(err).toBeDefined();
           resolve();
         } catch (error) {
@@ -571,6 +569,10 @@ describe("Neo4jSessionStore", () => {
         }
       });
     }));
+});
+/*
+
+
 
   it('should touch an existing session', () =>
     new Promise((resolve, reject) => {
