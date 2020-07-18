@@ -521,51 +521,9 @@ describe("Neo4jSessionStore", () => {
         },
       );
     }));
-});
-/*
 
-  it('should return null for expired sessions and destroy the record', () =>
-    new Promise((resolve, reject) => {
-      const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
-        if (err) reject(err);
-      });
-      const sessionId = uuidv4();
-      store.set(
-        sessionId,
-        {
-          cookie: {
-            maxAge: -1,
-          },
-        },
-        async (err) => {
-          if (err) reject(err);
-          else {
-            store.get(sessionId, async (err2, sess) => {
-              try {
-                if (err2) reject(err2);
-                else {
-                  expect(sess).toBe(null);
-                  const params = {
-                    TableName: TEST_OPTIONS.table.name,
-                    Key: {
-                      [TEST_OPTIONS.table.hashKey]: `${TEST_OPTIONS.table.hashPrefix}${sessionId}`,
-                    },
-                  };
-                  const sessionRow = await documentClient.get(params).promise();
-                  expect(sessionRow).toBeDefined();
-                  expect(sessionRow.Item).toBeUndefined();
-                  resolve();
-                }
-              } catch (error) {
-                reject(error);
-              }
-            });
-          }
-        },
-      );
-    }));
 
-  it('should destroy a session', () =>
+  it('X14 should destroy a session', () =>
     new Promise((resolve, reject) => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
@@ -582,6 +540,7 @@ describe("Neo4jSessionStore", () => {
                 try {
                   if (err3) reject(err3);
                   else {
+                    store.close();
                     expect(sess).toBe(null);
                     resolve();
                   }
@@ -594,6 +553,8 @@ describe("Neo4jSessionStore", () => {
         }
       });
     }));
+});
+/*
 
   it('should handle errors destroying sessions', () =>
     new Promise((resolve, reject) => {
