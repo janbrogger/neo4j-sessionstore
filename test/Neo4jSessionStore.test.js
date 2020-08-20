@@ -566,6 +566,7 @@ describe("Neo4jSessionStore", () => {
 
   it("X16 should touch an existing session", () =>
     new Promise((resolve, reject) => {
+      expect.assertions(5);
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
       });
@@ -573,7 +574,7 @@ describe("Neo4jSessionStore", () => {
       let originalExpires;
       let sess;
 
-      store.set(sessionId, {}, async (err) => {
+      store.set(sessionId, {},  (err) => {
         if (err) reject(err);
         else {
           try {
@@ -586,24 +587,28 @@ describe("Neo4jSessionStore", () => {
               expect(records.length).toEqual(1);
               var record = records[0];
               originalExpires = record.properties["expires"];
-              sess = record.properties["expires"];
-              neo4jsession.close();
-
-              setTimeout(() => {
-                store.touch(sessionId, sess, async (err3) => {
+              sess = JSON.parse(record.properties["sess"]);
+              neo4jsession.close();                      
+              
+              expect(sess.updated).toBeDefined();
+              setTimeout(() => {                
+                //expect(0).toEqual(1);
+                store.touch(sessionId, sess,  (err3) => {
+                  //expect(0).toEqual(1);                  
                   if (err3) reject(err3);
                   else {
                     try {
-                      const { neo4jdriver2, neo4jsession2 } = getNeo4jsession();
+                      const neo4jsession2 = neo4jdriver.session();
                       const queryString2 = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
 
                       neo4jsession2.run(queryString2).then((result) => {
                         const records = result.records.map((r) => r.get("n"));
                         expect(records.length).toEqual(1);
                         var record = records[0];
-                        newExpires = record.properties["expires"];
-                        sess = record.properties["expires"];
+                        const newExpires = record.properties["expires"];                        
                         neo4jsession2.close();
+                        neo4jdriver.close();
+                        store.close();
 
                         expect(newExpires).toBeGreaterThan(
                           originalExpires
@@ -620,6 +625,7 @@ describe("Neo4jSessionStore", () => {
                   }
                 });
               }, 2000);
+              
             });
           } catch (err2) {
             reject(err2);
