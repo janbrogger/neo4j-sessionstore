@@ -570,11 +570,11 @@ describe("Neo4jSessionStore", () => {
       const store = new Neo4jSessionStore(TEST_OPTIONS, (err) => {
         if (err) reject(err);
       });
-      const sessionId = uuidv4(); 
+      const sessionId = uuidv4();
       let originalExpires;
       let sess;
 
-      store.set(sessionId, {},  (err) => {
+      store.set(sessionId, {}, (err) => {
         if (err) reject(err);
         else {
           try {
@@ -582,51 +582,57 @@ describe("Neo4jSessionStore", () => {
             const { neo4jdriver, neo4jsession } = getNeo4jsession();
             const queryString = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
 
-            neo4jsession.run(queryString).then((result) => {
-              const records = result.records.map((r) => r.get("n"));
-              expect(records.length).toEqual(1);
-              var record = records[0];
-              originalExpires = record.properties["expires"];
-              sess = JSON.parse(record.properties["sess"]);
-              neo4jsession.close();                      
-              
-              expect(sess.updated).toBeDefined();
-              setTimeout(() => {                
-                //expect(0).toEqual(1);
-                store.touch(sessionId, sess,  (err3) => {
-                  //expect(0).toEqual(1);                  
-                  if (err3) reject(err3);
-                  else {
-                    try {
-                      const neo4jsession2 = neo4jdriver.session();
-                      const queryString2 = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+            neo4jsession
+              .run(queryString)
+              .then((result) => {
+                const records = result.records.map((r) => r.get("n"));
+                expect(records.length).toEqual(1);
+                var record = records[0];
+                originalExpires = record.properties["expires"];
+                sess = JSON.parse(record.properties["sess"]);
+                neo4jsession.close();
 
-                      neo4jsession2.run(queryString2).then((result) => {
-                        const records = result.records.map((r) => r.get("n"));
-                        expect(records.length).toEqual(1);
-                        var record = records[0];
-                        const newExpires = record.properties["expires"];                        
+                expect(sess.updated).toBeDefined();
+                setTimeout(() => {
+                  //expect(0).toEqual(1);
+                  store.touch(sessionId, sess, (err3) => {
+                    //expect(0).toEqual(1);
+                    if (err3) reject(err3);
+                    else {
+                      try {
+                        const neo4jsession2 = neo4jdriver.session();
+                        const queryString2 = `MATCH (n:${TEST_OPTIONS.table.name}) WHERE n.sessionId="${sessionIdWithPrefix}" RETURN (n);`;
+
+                        neo4jsession2.run(queryString2).then((result) => {
+                          const records = result.records.map((r) => r.get("n"));
+                          expect(records.length).toEqual(1);
+                          var record = records[0];
+                          const newExpires = record.properties["expires"];
+                          neo4jsession2.close();
+                          neo4jdriver.close();
+                          store.close();
+
+                          expect(newExpires).toBeGreaterThan(originalExpires);
+                          // 5 seconds window for test execution
+                          expect(newExpires).toBeLessThan(originalExpires + 5);
+                          resolve();
+                        });
+                      } catch (err4) {
                         neo4jsession2.close();
                         neo4jdriver.close();
                         store.close();
-
-                        expect(newExpires).toBeGreaterThan(
-                          originalExpires
-                        );
-                        // 5 seconds window for test execution
-                        expect(newExpires).toBeLessThan(
-                          originalExpires + 5
-                        );
-                        resolve();
-                      });                      
-                    } catch (err4) {
-                      reject(err4);
+                        reject(err4);
+                      }
                     }
-                  }
-                });
-              }, 2000);
-              
-            });
+                  });
+                }, 2000);
+              })
+              .catch((err99) => {
+                neo4jsession2.close();
+                neo4jdriver.close();
+                store.close();
+                reject(err99);
+              });
           } catch (err2) {
             reject(err2);
           }
