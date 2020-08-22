@@ -714,28 +714,25 @@ describe("Neo4jSessionStore", () => {
       });
     }));
  
-});
-/*
-
-  it('should handle errors creating the session table', () =>
-    new Promise((resolve, reject) => {
-      // eslint-disable-next-line
-      new Neo4jSessionStore(
-        {Promises fixed
-          ...TEST_OPTIONS,
-          table: {
-            name: 1,
-          },
+  it('X18 should handle errors creating the session table', () =>
+    new Promise((resolve, reject) => { 
+      const options = {
+        ...TEST_OPTIONS,
+        table: {
+          name: 1,
         },
-        (err) => {
+      };
+   
+      const store = new Neo4jSessionStore(options, (err) => {
           try {
             expect(err).toBeDefined();
+            store.close();
             resolve();
           } catch (error) {
+            store.close();
             reject(error);
           }
         },
       );
     }));
 });
-*/
