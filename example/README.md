@@ -13,4 +13,4 @@ npm start
 
 - Then open a web browser and go to http://localhost:8081/
 - Reload the page to increase the page counter.
-- You can verify in the Neo4j browser at http://localhost:8081/  that there is a session and page view counter
+- You can verify in the Neo4j browser at http://localhost:7474/browser/  that there is a session and page view counter
