@@ -725,7 +725,7 @@ describe("Neo4jSessionStore", () => {
    
       const store = new Neo4jSessionStore(options, (err) => {
           try {
-            expect(err).toBeDefined();
+            expect(err).toBeDefined();            
             store.close();
             resolve();
           } catch (error) {
