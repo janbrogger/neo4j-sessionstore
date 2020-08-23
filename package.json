@@ -23,7 +23,6 @@
     "node": "14.4.0"
   },
   "dependencies": {
-    "express": "^4.17.1",
     "express-session": "^1.17.1"
   },
   "devDependencies": {
