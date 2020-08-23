@@ -1,6 +1,6 @@
 {
   "name": "neo4j-sessionstore",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Implementation of a session storage using Neo4j as an extension of the express-session middleware.",
   "main": "index.js",
   "readmeFilename": "README.md",
@@ -14,7 +14,7 @@
     "url": "git+https://github.com/janbrogger/neo4j-sessionstore.git"
   },
   "author": "@JanBrogger jan@brogger.no",
-  "license": "",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/janbrogger/neo4j-sessionstore/issues"
   },
