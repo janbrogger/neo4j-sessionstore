@@ -13,6 +13,8 @@ const store = new Neo4jSessionStore(OPTIONS, (err) => {
 });
 ```
 
+There is a process exit listener that tries to handle this for you.
+
 ## Inspiration
 
 Inspired by https://github.com/rafaelrpinto/dynamodb-store
