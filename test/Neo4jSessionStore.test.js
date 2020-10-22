@@ -39,7 +39,7 @@ function closeNeo4j(neo4jdriver, neo4jsession) {
 
 async function deleteEverythingInDatabase() {
   const { neo4jdriver, neo4jsession } = getNeo4jsession();
-  const queryString = "MATCH (n) DELETE (n);";
+  const queryString = "MATCH (n) DETACH DELETE (n);";
   await neo4jsession.run(queryString).then((result) => {
     closeNeo4j(neo4jdriver, neo4jsession);
   });
