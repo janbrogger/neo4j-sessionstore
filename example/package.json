@@ -1,6 +1,6 @@
 {
   "name": "neo4j-sessionstore-example",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An example of using neo4j-sessionstore",
   "main": "index.js",
   "scripts": {
