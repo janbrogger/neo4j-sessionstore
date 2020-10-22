@@ -1,6 +1,6 @@
 {
   "name": "neo4j-sessionstore",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Implementation of a session storage using Neo4j as an extension of the express-session middleware.",
   "main": "index.js",
   "readmeFilename": "README.md",
