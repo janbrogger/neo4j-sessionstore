@@ -88,7 +88,13 @@ beforeAll(async () => {
 
   if (neo4jTestContainerExists & !neo4jTestContainerRuns) {
     //console.log('Starting stopped test neo4j container');
-    execSync("docker start testneo4j");
+    try {
+      execSync("docker start testneo4j");
+    }
+    catch(error) {
+      var errMsg = 'Error starting existing testneo4j container. Try stopping other neo4j instances. ' + error.message;
+      throw new Error(errMsg);
+    };
   } else if (!neo4jTestContainerExists) {
     //console.log('Starting a new test neo4j container');
     const neo4jDockerCommand =
